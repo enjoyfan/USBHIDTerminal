@@ -1,10 +1,11 @@
 buildscript {
     repositories {
         jcenter()
+        google()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:+'
+        classpath 'com.android.tools.build:gradle:3.5.3'
     }
 }
 
@@ -12,13 +13,14 @@ apply plugin: 'com.android.application'
 
 repositories {
     mavenCentral()
+    google()
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:22.1.1'
-    compile 'com.nanohttpd:nanohttpd:2.1.1'
-    compile 'com.nanohttpd:nanohttpd-websocket:2.1.1'
-    compile 'de.greenrobot:eventbus:2.4.0'
+    implementation 'com.android.support:support-v4:22.2.1'
+    implementation 'com.nanohttpd:nanohttpd:2.1.1'
+    implementation 'com.nanohttpd:nanohttpd-websocket:2.1.1'
+    implementation 'de.greenrobot:eventbus:2.4.0'
 }
 
 android {
@@ -28,7 +30,6 @@ android {
     }
 
     compileSdkVersion 22
-    buildToolsVersion "22.0.1"
 
     defaultConfig {
         minSdkVersion 12

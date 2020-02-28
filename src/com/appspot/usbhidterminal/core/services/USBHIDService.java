@@ -13,8 +13,10 @@ import com.appspot.usbhidterminal.core.USBUtils;
 import com.appspot.usbhidterminal.core.events.LogMessageEvent;
 import com.appspot.usbhidterminal.core.events.USBDataReceiveEvent;
 
-public class USBHIDService extends AbstractUSBHIDService {
+import java.util.Arrays;
+import java.util.Locale;
 
+public class UsbHidService extends AbstractUsbHidService {
 	private String delimiter;
 	private String receiveDataFormat;
 
@@ -54,7 +56,7 @@ public class USBHIDService extends AbstractUSBHIDService {
 	}
 
 	@Override
-	public CharSequence onBuildingDevicesList(UsbDevice usbDevice) {
+	public CharSequence onBuildingDeviceList(UsbDevice usbDevice) {
 		return "devID:" + usbDevice.getDeviceId() + " VID:" + Integer.toHexString(usbDevice.getVendorId()) + " PID:" + Integer.toHexString(usbDevice.getProductId()) + " " + usbDevice.getDeviceName();
 	}
 
@@ -64,11 +66,12 @@ public class USBHIDService extends AbstractUSBHIDService {
 	}
 
 	@Override
-	public void onUSBDataSended(int status, byte[] out) {
-		mLog("Sended " + status + " bytes");
-		for (int i = 0; i < out.length && out[i] != 0; i++) {
-			mLog(Consts.SPACE + USBUtils.toInt(out[i]));
-		}
+	public void onUSBDataSent(int status, byte[] out) {
+		StringBuilder sb = new StringBuilder("Sent " + status + " bytes:");
+        for (int i = 0; i < out.length; i++) {
+            sb.append(Consts.SPACE).append(String.format(Locale.US, "%02X", out[i]));
+        }
+        mLog(sb.toString());
 	}
 
 	@Override
@@ -78,7 +81,6 @@ public class USBHIDService extends AbstractUSBHIDService {
 
 	@Override
 	public void onUSBDataReceive(byte[] buffer) {
-
 		StringBuilder stringBuilder = new StringBuilder();
 		int i = 0;
 		if (receiveDataFormat.equals(Consts.INTEGER)) {
@@ -86,8 +88,19 @@ public class USBHIDService extends AbstractUSBHIDService {
 				stringBuilder.append(delimiter).append(String.valueOf(USBUtils.toInt(buffer[i])));
 			}
 		} else if (receiveDataFormat.equals(Consts.HEXADECIMAL)) {
-			for (; i < buffer.length && buffer[i] != 0; i++) {
-				stringBuilder.append(delimiter).append(Integer.toHexString(buffer[i]));
+		    // for RFID inputer
+            final byte[] normalized = normalizeForRfidInputer(buffer);
+            byte[] out;
+            if(normalized!=null) {
+                stringBuilder.append("(有效数据)");
+                out = normalized;
+            } else {
+                stringBuilder.append("(无效数据)");
+                out = buffer;
+            }
+
+			for (; i < out.length; i++) {
+				stringBuilder.append(delimiter).append(String.format(Locale.US, "%02X", out[i]));
 			}
 		} else if (receiveDataFormat.equals(Consts.TEXT)) {
 			for (; i < buffer.length && buffer[i] != 0; i++) {
@@ -101,7 +114,29 @@ public class USBHIDService extends AbstractUSBHIDService {
 		eventBus.post(new USBDataReceiveEvent(stringBuilder.toString(), i));
 	}
 
-	private void mLog(String log) {
+
+    private byte[] normalizeForRfidInputer(byte[] packets) {
+        if (packets == null || packets.length < 4 || (packets[0] & 0xFF) != 0xAA
+                || (packets[1] & 0xFF) + 3 > packets.length) {
+            return null;
+        }
+
+        // 检查校验字节
+        final int len = packets[1] & 0xFF;
+        final int checkExpected = packets[len + 2];
+        int checkActual = 0;
+        for (int i = 2; i < len + 2; ++i) {
+            checkActual ^= packets[i];
+        }
+        if (checkExpected != checkActual) {
+            return null;
+        }
+
+        return Arrays.copyOf(packets, len + 3);
+    }
+
+
+    private void mLog(String log) {
 		eventBus.post(new LogMessageEvent(log));
 	}
 

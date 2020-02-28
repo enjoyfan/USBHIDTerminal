@@ -27,7 +27,7 @@ import com.appspot.usbhidterminal.core.events.ShowDevicesListEvent;
 import com.appspot.usbhidterminal.core.events.USBDataReceiveEvent;
 import com.appspot.usbhidterminal.core.events.USBDataSendEvent;
 import com.appspot.usbhidterminal.core.services.SocketService;
-import com.appspot.usbhidterminal.core.services.USBHIDService;
+import com.appspot.usbhidterminal.core.services.UsbHidService;
 import com.appspot.usbhidterminal.core.services.WebServerService;
 
 import de.greenrobot.event.EventBus;
@@ -41,7 +41,7 @@ public class USBHIDTerminal extends Activity implements View.OnClickListener {
 
 	private EditText edtlogText;
 	private EditText edtxtHidInput;
-	private Button btnSend;
+	private Button btnSend, btnOpen, btnClose;
 	private Button btnSelectHIDDevice;
 	private Button btnClear;
 	private RadioButton rbSendText;
@@ -67,7 +67,7 @@ public class USBHIDTerminal extends Activity implements View.OnClickListener {
 	};
 
 	private void prepareServices() {
-		usbService = new Intent(this, USBHIDService.class);
+		usbService = new Intent(this, UsbHidService.class);
 		startService(usbService);
 		webServerServiceIsStart(sharedPreferences.getBoolean("enable_web_server", false));
 		socketServiceIsStart(sharedPreferences.getBoolean("enable_socket_server", false));
@@ -91,6 +91,10 @@ public class USBHIDTerminal extends Activity implements View.OnClickListener {
 		setVersionToTitle();
 		btnSend = (Button) findViewById(R.id.btnSend);
 		btnSend.setOnClickListener(this);
+		btnOpen = (Button) findViewById(R.id.btn_open);
+		btnOpen.setOnClickListener(this);
+		btnClose = (Button) findViewById(R.id.btn_close);
+		btnClose.setOnClickListener(this);
 
 		btnSelectHIDDevice = (Button) findViewById(R.id.btnSelectHIDDevice);
 		btnSelectHIDDevice.setOnClickListener(this);
@@ -108,13 +112,17 @@ public class USBHIDTerminal extends Activity implements View.OnClickListener {
 
 		mLog("Initialized\nPlease select your USB HID device\n", false);
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-		edtxtHidInput.setText("test");
+		edtxtHidInput.setText("");
 		// btnSend.setEnabled(true);
 	}
 
 	public void onClick(View v) {
 		if (v == btnSend) {
 			eventBus.post(new USBDataSendEvent(edtxtHidInput.getText().toString()));
+		} else if (v == btnOpen) {
+			eventBus.post(new USBDataSendEvent("#aa #02 #02 #01 #03"));
+		} else if (v == btnClose) {
+			eventBus.post(new USBDataSendEvent("#aa #02 #02 #00 #02"));
 		} else if (v == rbSendText || v == rbSendDataType) {
 			sendToUSBService(Consts.ACTION_USB_DATA_TYPE, rbSendDataType.isChecked());
 		} else if (v == btnClear) {
@@ -144,7 +152,7 @@ public class USBHIDTerminal extends Activity implements View.OnClickListener {
 	}
 
 	public void onEvent(USBDataReceiveEvent event) {
-		mLog(event.getData() + " \nReceived " + event.getBytesCount() + " bytes", true);
+		mLog("Received " + event.getBytesCount() + " bytes:" + event.getData(), true);
 	}
 
 	public void onEvent(LogMessageEvent event) {
@@ -157,10 +165,14 @@ public class USBHIDTerminal extends Activity implements View.OnClickListener {
 
 	public void onEvent(DeviceAttachedEvent event) {
 		btnSend.setEnabled(true);
+		btnOpen.setEnabled(true);
+		btnClose.setEnabled(true);
 	}
 
 	public void onEvent(DeviceDetachedEvent event) {
 		btnSend.setEnabled(false);
+		btnOpen.setEnabled(false);
+		btnClose.setEnabled(false);
 	}
 
 	@Override
@@ -260,7 +272,7 @@ public class USBHIDTerminal extends Activity implements View.OnClickListener {
 			case Consts.USB_HID_TERMINAL_CLOSE_ACTION:
 				stopService(new Intent(this, SocketService.class));
 				stopService(new Intent(this, WebServerService.class));
-				stopService(new Intent(this, USBHIDService.class));
+				stopService(new Intent(this, UsbHidService.class));
 				((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).cancel(Consts.USB_HID_TERMINAL_NOTIFICATION);
 				finish();
 				break;

@@ -31,6 +31,7 @@
             android:minHeight="36dip"
             android:text="@string/clear"
             android:textAppearance="?android:attr/textAppearanceSmallInverse" />
+
     </LinearLayout>
 
     <RadioGroup
@@ -57,8 +58,8 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dip"
         android:layout_gravity="top"
+        android:layout_height="0dip"
         android:layout_weight="1"
         android:orientation="vertical" >
 
@@ -66,9 +67,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" >
 
+            <EditText
+                android:id="@+id/edtxtHidInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:textAppearance="?android:attr/textAppearanceSmallInverse" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
             <Button
                 android:id="@+id/btnSend"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1.0"
                 android:layout_height="wrap_content"
                 android:enabled="false"
                 android:minHeight="36dip"
@@ -78,12 +93,26 @@
                 <requestFocus />
             </Button>
 
-            <EditText
-                android:id="@+id/edtxtHidInput"
-                android:layout_width="match_parent"
+            <Button
+                android:id="@+id/btn_open"
+                android:layout_width="0dp"
+                android:layout_weight="1.0"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:textAppearance="?android:attr/textAppearanceSmallInverse" />
+                android:enabled="false"
+                android:minHeight="36dip"
+                android:text="Open"
+                android:textAppearance="?android:attr/textAppearanceSmallInverse" >
+            </Button>
+            <Button
+                android:id="@+id/btn_close"
+                android:layout_width="0dp"
+                android:layout_weight="1.0"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:minHeight="36dip"
+                android:text="Close"
+                android:textAppearance="?android:attr/textAppearanceSmallInverse" >
+            </Button>
         </LinearLayout>
 
         <EditText
@@ -93,8 +122,8 @@
             android:layout_gravity="top"
             android:clickable="false"
             android:inputType="textMultiLine"
-            android:scrollbars="vertical"
             android:textAppearance="?android:attr/textAppearanceSmallInverse" >
+
         </EditText>
     </LinearLayout>
 

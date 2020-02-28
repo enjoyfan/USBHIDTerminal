@@ -29,26 +29,23 @@ import com.appspot.usbhidterminal.core.events.ShowDevicesListEvent;
 import com.appspot.usbhidterminal.core.events.USBDataSendEvent;
 import de.greenrobot.event.EventBus;
 
-public abstract class AbstractUSBHIDService extends Service {
+public abstract class AbstractUsbHidService extends Service {
+	private static final String TAG = AbstractUsbHidService.class.getCanonicalName();
 
-	private static final String TAG = AbstractUSBHIDService.class.getCanonicalName();
-
-	private USBThreadDataReceiver usbThreadDataReceiver;
+	private UsbThreadDataReceiver usbThreadDataReceiver;
 
 	private final Handler uiHandler = new Handler();
 
 	private UsbManager mUsbManager;
-	private UsbInterface intf;
 	private UsbEndpoint endPointRead;
 	private UsbEndpoint endPointWrite;
 	private UsbDeviceConnection connection;
 	private UsbDevice device;
 
-	private IntentFilter filter;
 	private PendingIntent mPermissionIntent;
 
 	private int packetSize;
-	private boolean sendedDataType;
+	private boolean sentDataType;
 
 	protected EventBus eventBus = EventBus.getDefault();
 
@@ -61,7 +58,7 @@ public abstract class AbstractUSBHIDService extends Service {
 	public void onCreate() {
 		super.onCreate();
 		mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(Consts.ACTION_USB_PERMISSION), 0);
-		filter = new IntentFilter(Consts.ACTION_USB_PERMISSION);
+		IntentFilter filter = new IntentFilter(Consts.ACTION_USB_PERMISSION);
 		filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
 		filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
 		filter.addAction(Consts.ACTION_USB_SHOW_DEVICES_LIST);
@@ -74,7 +71,7 @@ public abstract class AbstractUSBHIDService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		String action = intent.getAction();
 		if (Consts.ACTION_USB_DATA_TYPE.equals(action)) {
-			sendedDataType = intent.getBooleanExtra(Consts.ACTION_USB_DATA_TYPE, false);
+			sentDataType = intent.getBooleanExtra(Consts.ACTION_USB_DATA_TYPE, false);
 		}
 		onCommand(intent, action, flags, startId);
 		return START_REDELIVER_INTENT;
@@ -90,11 +87,10 @@ public abstract class AbstractUSBHIDService extends Service {
 		unregisterReceiver(mUsbReceiver);
 	}
 
-	private class USBThreadDataReceiver extends Thread {
-
+	private class UsbThreadDataReceiver extends Thread {
 		private volatile boolean isStopped;
 
-		public USBThreadDataReceiver() {
+		public UsbThreadDataReceiver() {
 		}
 
 		@Override
@@ -126,7 +122,7 @@ public abstract class AbstractUSBHIDService extends Service {
 	}
 
 	public void onEventMainThread(USBDataSendEvent event){
-		sendData(event.getData(), sendedDataType);
+		sendData(event.getData(), sentDataType);
 	}
 
 	public void onEvent(SelectDeviceEvent event) {
@@ -138,7 +134,7 @@ public abstract class AbstractUSBHIDService extends Service {
         mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         List<CharSequence> list = new LinkedList<CharSequence>();
         for (UsbDevice usbDevice : mUsbManager.getDeviceList().values()) {
-            list.add(onBuildingDevicesList(usbDevice));
+            list.add(onBuildingDeviceList(usbDevice));
         }
         final CharSequence devicesName[] = new CharSequence[mUsbManager.getDeviceList().size()];
         list.toArray(devicesName);
@@ -164,7 +160,7 @@ public abstract class AbstractUSBHIDService extends Service {
 				}
 			}
 			int status = connection.bulkTransfer(endPointWrite, out, out.length, 250);
-			onUSBDataSended(status, out);
+			onUSBDataSent(status, out);
 		}
 	}
 
@@ -200,7 +196,7 @@ public abstract class AbstractUSBHIDService extends Service {
 			if (device != null && intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
 				onDeviceSelected(device);
 				connection = mUsbManager.openDevice(device);
-				intf = device.getInterface(0);
+				UsbInterface intf = device.getInterface(0);
 				if (null == connection) {
 					// mLog("(unable to establish connection)\n");
 				} else {
@@ -221,7 +217,7 @@ public abstract class AbstractUSBHIDService extends Service {
 				} catch (Exception e) {
 					Log.e("endPointWrite", "Device have no endPointRead", e);
 				}
-				usbThreadDataReceiver = new USBThreadDataReceiver();
+				usbThreadDataReceiver = new UsbThreadDataReceiver();
 				usbThreadDataReceiver.start();
 				eventBus.post(new DeviceAttachedEvent());
 			}
@@ -243,14 +239,14 @@ public abstract class AbstractUSBHIDService extends Service {
 	public void onDeviceSelected(UsbDevice device) {
 	}
 
-	public CharSequence onBuildingDevicesList(UsbDevice usbDevice) {
+	public CharSequence onBuildingDeviceList(UsbDevice usbDevice) {
 		return null;
 	}
 
 	public void onUSBDataSending(String data) {
 	}
 
-	public void onUSBDataSended(int status, byte[] out) {
+	public void onUSBDataSent(int status, byte[] out) {
 	}
 
 	public void onSendingError(Exception e) {
